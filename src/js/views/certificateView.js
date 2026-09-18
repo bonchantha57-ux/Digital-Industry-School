@@ -46,7 +46,9 @@ export function renderCertificateView(params = {}) {
   const course = store.getCourseById(currentStudent.courseId);
   const settings = store.getSettings();
   const certTheme = currentStudent.certificate?.theme || 'gold';
-  const certDateKh = formatKhmerDate(currentStudent.certificate?.issueDate);
+  const certLocation = currentStudent.certificate?.issueLocation || 'រាជធានីភ្នំពេញ';
+  const certDateIso = currentStudent.certificate?.issueDate || new Date().toISOString().split('T')[0];
+  const certDateKh = formatKhmerDate(certDateIso, certLocation);
   const photoMode = currentStudent.photoMode || currentStudent.certificate?.photoMode || 'digital';
 
   return `
@@ -153,6 +155,54 @@ export function renderCertificateView(params = {}) {
           </div>
         </div>
 
+        <!-- Issue Date & Location Control Bar (កែសម្រួលទីកន្លែង និងកាលបរិច្ឆេទចេញវិញ្ញាបនបត្រ) -->
+        <div class="cert-issue-bar no-print" style="display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.9)); border: 1px solid rgba(217, 119, 6, 0.4); border-radius: var(--radius-md); padding: 10px 18px; margin-bottom: 18px; flex-wrap: wrap; gap: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.25);">
+          <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <!-- Location Input -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 13.5px; color: var(--gold-300); font-weight: 600;">📍 ទីកន្លែងចេញ៖</span>
+              <input type="text" id="certIssueLocationInput" class="form-control" 
+                     value="${certLocation}" 
+                     placeholder="ឧ. រាជធានីភ្នំពេញ ឬ ខេត្តសៀមរាប..." 
+                     list="khmerProvincesDatalist"
+                     style="width: 185px; padding: 6px 12px; font-size: 13.5px; height: 36px; background: rgba(0,0,0,0.3); border-color: rgba(217, 119, 6, 0.4);" />
+              <datalist id="khmerProvincesDatalist">
+                <option value="រាជធានីភ្នំពេញ"></option>
+                <option value="ខេត្តកណ្តាល"></option>
+                <option value="ខេត្តសៀមរាប"></option>
+                <option value="ខេត្តបាត់ដំបង"></option>
+                <option value="ខេត្តព្រះសីហនុ"></option>
+                <option value="ខេត្តកំពង់ចាម"></option>
+                <option value="ខេត្តកំពង់ឆ្នាំង"></option>
+                <option value="ខេត្តកំពង់ស្ពឺ"></option>
+                <option value="ខេត្តកំពត"></option>
+                <option value="ខេត្តតាកែវ"></option>
+                <option value="ខេត្តពោធិ៍សាត់"></option>
+                <option value="ខេត្តបន្ទាយមានជ័យ"></option>
+                <option value="ខេត្តស្វាយរៀង"></option>
+                <option value="ខេត្តព្រៃវែង"></option>
+              </datalist>
+            </div>
+
+            <!-- Date Picker -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 13.5px; color: var(--gold-300); font-weight: 600;">📅 ថ្ងៃខែឆ្នាំចេញ៖</span>
+              <input type="date" id="certIssueDateInput" class="form-control" 
+                     value="${certDateIso}" 
+                     style="width: 155px; padding: 6px 10px; font-size: 13.5px; height: 36px; background: rgba(0,0,0,0.3); border-color: rgba(217, 119, 6, 0.4);" />
+            </div>
+
+            <button class="btn btn-outline-gold btn-sm" id="certSaveIssueInfoBtn" title="រក្សាទុកទីកន្លែង និងកាលបរិច្ឆេទចូល Database">
+              <span>💾 រក្សាទុកកាលបរិច្ឆេទ</span>
+            </button>
+          </div>
+
+          <div style="font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+            <span>បង្ហាញលើសញ្ញាបត្រ៖ </span>
+            <strong id="certPreviewDateText" style="color: var(--gold-300); font-size: 13.5px;">${certDateKh}</strong>
+          </div>
+        </div>
+
         <!-- The Printable Certificate Container -->
         <div class="cert-canvas-container">
           <div class="khmer-certificate theme-${certTheme}" id="khmerCertificateElement">
@@ -218,7 +268,7 @@ export function renderCertificateView(params = {}) {
               <div class="cert-bottom-grid" id="certBottomGrid">
                 <!-- Left: Date & Trainer Born Chantha Signature (Digital or Manual Space) -->
                 <div class="cert-sign-block">
-                  <div class="cert-sign-date">${certDateKh}</div>
+                  <div class="cert-sign-date" id="certSignDateElement" title="ចុចដើម្បីកែប្រែទីកន្លែង និងកាលបរិច្ឆេទ (Click to edit location & date)" style="cursor: pointer;">${certDateKh}</div>
                   <div class="cert-sign-title">គ្រូបណ្តុះបណ្តាល (Training Instructor)</div>
                   
                   <!-- Digital Signature Image -->
@@ -297,12 +347,63 @@ export function initCertificateEvents(onNavigate, showToast, currentStudentId) {
     const certNo = student?.certificate?.certificateNo || `CERT-${selectedId}`;
 
     // Verification URL containing certificate ID
-    const verifyUrl = `${window.location.origin}/#verify?certNo=${encodeURIComponent(certNo)}&studentId=${encodeURIComponent(selectedId)}`;
+    const hostBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'https://studentdinetwork.web.app'
+      : window.location.origin;
+    const verifyUrl = `${hostBase}/#verify?certNo=${encodeURIComponent(certNo)}&studentId=${encodeURIComponent(selectedId)}`;
     const qrDataUrl = await generateQRCode(verifyUrl, { width: 160 });
     qrImage.src = qrDataUrl;
   }
 
   updateCertQR();
+
+  // --- Issue Location & Date Live Editing ---
+  const locationInput = document.getElementById('certIssueLocationInput');
+  const dateInput = document.getElementById('certIssueDateInput');
+  const saveIssueBtn = document.getElementById('certSaveIssueInfoBtn');
+  const previewDateText = document.getElementById('certPreviewDateText');
+  const certSignDateElement = document.getElementById('certSignDateElement');
+
+  function updateCertDateDisplay() {
+    const loc = locationInput?.value || 'រាជធានីភ្នំពេញ';
+    const dateVal = dateInput?.value || new Date().toISOString().split('T')[0];
+    const formatted = formatKhmerDate(dateVal, loc);
+    if (certSignDateElement) certSignDateElement.textContent = formatted;
+    if (previewDateText) previewDateText.textContent = formatted;
+    return { loc, dateVal, formatted };
+  }
+
+  locationInput?.addEventListener('input', () => {
+    updateCertDateDisplay();
+  });
+
+  dateInput?.addEventListener('change', () => {
+    updateCertDateDisplay();
+  });
+
+  const handleSaveIssueInfo = async () => {
+    const { loc, dateVal } = updateCertDateDisplay();
+    const activeId = studentSelector?.value || currentStudentId;
+    if (!activeId) return;
+
+    await store.updateCertificateIssueInfo(activeId, {
+      issueLocation: loc,
+      issueDate: dateVal
+    });
+
+    updateCertQR();
+    showToast(`បានកែសម្រួលទីកន្លែង (${loc}) និងកាលបរិច្ឆេទ (${dateVal}) ដោយជោគជ័យ!`, 'success');
+  };
+
+  saveIssueBtn?.addEventListener('click', handleSaveIssueInfo);
+  locationInput?.addEventListener('change', handleSaveIssueInfo);
+
+  // Clicking the date on the certificate directly highlights the location input
+  certSignDateElement?.addEventListener('click', () => {
+    locationInput?.focus();
+    locationInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showToast('លោកគ្រូអាចកែប្រែទីកន្លែង និងកាលបរិច្ឆេទចេញវិញ្ញាបនបត្រនៅប្រអប់ខាងលើនេះបាន!', 'info');
+  });
 
   // Signature Mode Toggle (Digital vs Manual Pen on Paper)
   const sigImg = document.getElementById('certSignatureImg');

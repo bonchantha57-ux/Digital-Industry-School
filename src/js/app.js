@@ -319,7 +319,7 @@ class AppRouter {
         initCertificateEvents(navCallback, toastCallback, params.studentId);
         break;
       case 'verify':
-        initVerifyEvents(navCallback, toastCallback);
+        initVerifyEvents(navCallback, toastCallback, params);
         break;
     }
   }

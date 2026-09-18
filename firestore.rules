@@ -56,11 +56,8 @@ service cloud.firestore {
       // សិស្សអាចចុះឈ្មោះចូលរៀនបានដោយសេរីតាម Online (មានការត្រួតពិនិត្យ Schema ត្រឹមត្រូវ)
       allow create: if isValidStudentRegistration();
 
-      // អាចអាន ឬទាញព័ត៌មានសិស្សម្នាក់ៗ (សម្រាប់ការផ្ទៀងផ្ទាត់វិញ្ញាបនបត្រតាម QR Code / លេខសម្គាល់)
-      allow get: if true;
-
-      // ការទាញបញ្ជីឈ្មោះសិស្សទាំងអស់ (List all students) តម្រូវឱ្យមានសិទ្ធិជា Admin
-      allow list: if isAuthenticated();
+      // អាចអានព័ត៌មានសិស្ស និងផ្ទៀងផ្ទាត់វិញ្ញាបនបត្រតាម QR Code / លេខសម្គាល់ ឬ Sync លើទូរស័ព្ទដៃ
+      allow read: if true;
 
       // មានតែ Admin ទេដែលអាចកែប្រែទិន្នន័យ ដាក់ពិន្ទុ ឬចេញវិញ្ញាបនបត្រ
       allow update: if isAuthenticated();

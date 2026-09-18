@@ -20,18 +20,31 @@ export function toKhmerNum(num) {
 }
 
 /**
- * Formats a Date object or ISO string to standard Khmer formal date
- * e.g., "រាជធានីភ្នំពេញ ថ្ងៃទី១៧ ខែកញ្ញា ឆ្នាំ២០២៦"
+ * Formats a Date object or ISO string to standard Khmer formal date with customizable location
+ * e.g., "រាជធានីភ្នំពេញ, ថ្ងៃទី១៨ ខែកញ្ញា ឆ្នាំ២០២៦"
  */
-export function formatKhmerDate(dateInput) {
-  const date = dateInput ? new Date(dateInput) : new Date();
-  if (isNaN(date.getTime())) return '';
+export function formatKhmerDate(dateInput, location = 'រាជធានីភ្នំពេញ') {
+  let day, monthIdx, year;
 
-  const day = toKhmerNum(date.getDate());
-  const month = KHMER_MONTHS[date.getMonth()];
-  const year = toKhmerNum(date.getFullYear());
+  if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateInput)) {
+    const parts = dateInput.split('T')[0].split('-');
+    year = parseInt(parts[0], 10);
+    monthIdx = parseInt(parts[1], 10) - 1;
+    day = parseInt(parts[2], 10);
+  } else {
+    const date = dateInput ? new Date(dateInput) : new Date();
+    if (isNaN(date.getTime())) return '';
+    day = date.getDate();
+    monthIdx = date.getMonth();
+    year = date.getFullYear();
+  }
 
-  return `រាជធានីភ្នំពេញ, ថ្ងៃទី${day} ខែ${month} ឆ្នាំ${year}`;
+  const khDay = toKhmerNum(day);
+  const khMonth = KHMER_MONTHS[monthIdx] || 'កញ្ញា';
+  const khYear = toKhmerNum(year);
+  const loc = (location || 'រាជធានីភ្នំពេញ').trim();
+
+  return `${loc}, ថ្ងៃទី${khDay} ខែ${khMonth} ឆ្នាំ${khYear}`;
 }
 
 /**

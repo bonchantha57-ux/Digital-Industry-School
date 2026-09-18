@@ -4,7 +4,7 @@
  */
 
 import { getGradeDetails } from './utils/khmerNumbers.js';
-import { db, auth, signInWithEmailAndPassword, signOut, collection, doc, getDocs, setDoc, updateDoc, deleteDoc, isFirebaseConfigured, query, where } from './firebase.js';
+import { db, auth, signInWithEmailAndPassword, signOut, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, isFirebaseConfigured, query, where } from './firebase.js';
 
 const STORAGE_KEYS = {
   COURSES: 'digital_industry_courses_v2',
@@ -421,7 +421,8 @@ class DataStore {
 
     const certData = {
       certificateNo: student.certificate?.certificateNo || randomCertId,
-      issueDate: customOptions.issueDate || new Date().toISOString().split('T')[0],
+      issueDate: customOptions.issueDate || student.certificate?.issueDate || new Date().toISOString().split('T')[0],
+      issueLocation: (customOptions.issueLocation || student.certificate?.issueLocation || 'រាជធានីភ្នំពេញ').trim(),
       theme: customOptions.theme || student.certificate?.theme || 'gold',
       directorName: settings.directorName, // 'លោក ប៊ន ចន្ថា'
       directorTitle: settings.directorTitle, // 'គ្រូបណ្តុះបណ្តាល (Training Instructor)'
@@ -440,6 +441,99 @@ class DataStore {
     }
 
     return { student, certificate: certData };
+  }
+
+  async updateCertificateIssueInfo(studentId, { issueDate, issueLocation }) {
+    const students = this.getStudents();
+    const index = students.findIndex(s => s.id === studentId);
+    if (index === -1) return null;
+
+    const student = students[index];
+    if (!student.certificate) {
+      this.generateCertificate(studentId, { issueDate, issueLocation });
+      return this.getStudentById(studentId);
+    }
+
+    if (issueDate) {
+      student.certificate.issueDate = issueDate;
+    }
+    if (issueLocation) {
+      student.certificate.issueLocation = issueLocation.trim();
+    }
+
+    localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
+
+    if (isFirebaseConfigured() && db) {
+      try {
+        await setDoc(doc(db, 'students', studentId), student, { merge: true });
+        console.log('✅ Updated certificate issue info in Firestore live');
+      } catch (e) {
+        console.warn('Firestore updateCertificateIssueInfo:', e);
+      }
+    }
+
+    return student;
+  }
+
+  async fetchStudentFromFirestore(studentId, certNo = null) {
+    if (!isFirebaseConfigured() || !db) return null;
+    try {
+      // 1. Try by student ID directly
+      if (studentId) {
+        const studentDoc = await getDoc(doc(db, 'students', studentId));
+        if (studentDoc.exists()) {
+          const student = { ...studentDoc.data(), id: studentDoc.id };
+          this.saveStudentLocally(student);
+          return student;
+        }
+      }
+
+      // 2. Try by certificateNo
+      if (certNo) {
+        const q = query(collection(db, 'students'), where('certificate.certificateNo', '==', certNo));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const firstDoc = snap.docs[0];
+          const student = { ...firstDoc.data(), id: firstDoc.id };
+          this.saveStudentLocally(student);
+          return student;
+        }
+      }
+    } catch (e) {
+      console.warn('fetchStudentFromFirestore error:', e);
+    }
+    return null;
+  }
+
+  async fetchCourseByIdFromFirestore(courseId) {
+    if (!isFirebaseConfigured() || !db || !courseId) return null;
+    try {
+      const courseDoc = await getDoc(doc(db, 'courses', courseId));
+      if (courseDoc.exists()) {
+        const course = { ...courseDoc.data(), id: courseDoc.id };
+        const courses = this.getCourses();
+        const idx = courses.findIndex(c => c.id === courseId);
+        if (idx >= 0) courses[idx] = course;
+        else courses.push(course);
+        localStorage.setItem(STORAGE_KEYS.COURSES, JSON.stringify(courses));
+        return course;
+      }
+    } catch (e) {
+      console.warn('fetchCourseByIdFromFirestore error:', e);
+    }
+    return null;
+  }
+
+  saveStudentLocally(student) {
+    if (!student || !student.id) return;
+    const students = this.getStudents();
+    const idx = students.findIndex(s => s.id === student.id);
+    if (idx >= 0) {
+      students[idx] = { ...students[idx], ...student };
+    } else {
+      students.unshift(student);
+    }
+    localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
   }
 
   // --- Settings & Diagnostics Methods ---
