@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ប្រព័ន្ធចុះឈ្មោះសិស្ស គ្រប់គ្រងវគ្គសិក្សា ដាក់ពិន្ទុ & វិញ្ញាបនបត្រស្ដង់ដារខ្មែរ</title>
+  <meta name="description" content="ប្រព័ន្ធគ្រប់គ្រងវគ្គសិក្សា ចុះឈ្មោះសិស្សចូលរៀន ដាក់ពិន្ទុ និងបង្កើតវិញ្ញាបនបត្របែបខ្មែរឡូយស្ដង់ដារជាតិ (Khmer Standard Certificate Generator) មាន QR Code ផ្ទៀងផ្ទាត់ និងបោះពុម្ព A4 យ៉ាងស្រស់ស្អាត។" />
+  <link rel="icon" type="image/svg+xml" href="/assets/khmer-corner.svg" />
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/src/css/main.css" />
+  <link rel="stylesheet" href="/src/css/components.css" />
+  <link rel="stylesheet" href="/src/css/certificate.css" />
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="#home" class="nav-brand" data-nav="home" id="navBrandLogo">
+        <div class="nav-logo-emblem">
+          <img src="/assets/digital-industry-logo-round.png" alt="Digital Industry Logo" class="di-round-logo" />
+        </div>
+        <div class="nav-brand-text">
+          <span class="nav-title-kh">Digital Industry</span>
+          <span class="nav-title-en">Training Center • គ្រូ ប៊ន ចន្ថា</span>
+        </div>
+      </a>
+
+      <button class="nav-mobile-toggle" id="navMobileToggle" aria-label="Toggle navigation">
+        ☰
+      </button>
+
+      <nav>
+        <ul class="nav-links" id="navLinks">
+          <li>
+            <button class="nav-item-btn" data-nav="home" id="navHomeBtn">
+              <span>🏠 ទំព័រដើម</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item-btn" data-nav="register" id="navRegisterBtn">
+              <span>✍️ ចុះឈ្មោះរៀន</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item-btn" data-nav="verify" id="navVerifyBtn">
+              <span>🔍 ផ្ទៀងផ្ទាត់ QR</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item-btn" data-nav="certificate" id="navCertBtn">
+              <span>🏆 វិញ្ញាបនបត្រខ្មែរ</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item-btn" data-nav="admin-courses" id="navAdminBtn">
+              <span>⚙️ ផ្ទាំង Admin</span>
+              <span class="nav-admin-badge">Admin</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main View Container -->
+  <main id="appMainContent" role="main">
+    <!-- Dynamic views will render here -->
+  </main>
+
+  <!-- Global Toast Notification Container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- Global Admin Login Modal -->
+  <div class="modal-backdrop" id="adminLoginModal">
+    <div class="modal-content login-modal-card" style="max-width: 460px; padding: 0;">
+      <div class="login-header-banner">
+        <button class="modal-close-btn" id="closeLoginModalBtn" style="top: 14px; right: 14px;">✕</button>
+        <div class="login-logo-ring">
+          <img src="/assets/digital-industry-logo-round.png" alt="Digital Industry Logo" />
+        </div>
+        <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 4px;">
+          ច្រកចូលគ្រប់គ្រង (Admin Login)
+        </h3>
+        <p style="font-size: 13px; color: var(--text-muted); margin: 0;">
+          Digital Industry Training Center • គ្រូបណ្តុះបណ្តាល ប៊ន ចន្ថា
+        </p>
+      </div>
+
+      <div class="login-body">
+        <div class="demo-credentials-box">
+          <div>
+            <strong>🔑 គណនី Firebase Admin:</strong><br/>
+            Email: <code style="color: #fff;">admin@digital.com</code>
+          </div>
+          <button type="button" id="fillDemoLoginBtn" class="btn btn-outline btn-sm" style="font-size: 11px; padding: 3px 8px;">
+            បំពេញស្វ័យប្រវត្ត
+          </button>
+        </div>
+
+        <form id="adminLoginForm">
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" for="loginUsername">
+              ឈ្មោះអ្នកប្រើប្រាស់ ឬ អ៊ីមែល <span class="req">*</span>
+            </label>
+            <input type="text" id="loginUsername" class="form-control" placeholder="ឧ. admin ឬ admin@digitalindustry.edu.kh" required autocomplete="username" />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 18px;">
+            <label class="form-label" for="loginPassword">
+              ពាក្យសម្ងាត់ (Password) <span class="req">*</span>
+            </label>
+            <div class="input-password-wrap">
+              <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required autocomplete="current-password" />
+              <button type="button" class="password-toggle-btn" id="toggleLoginPasswordBtn" title="បង្ហាញ/លាក់ ពាក្យសម្ងាត់">
+                👁️
+              </button>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer;">
+              <input type="checkbox" id="loginRememberMe" checked style="accent-color: var(--gold-400);" />
+              ចងចាំការចូលក្នុងកម្មវិធីនេះ (Stay Logged In)
+            </label>
+          </div>
+
+          <div id="loginErrorMessage" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; font-size: 13px; padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 16px;"></div>
+
+          <button type="submit" class="btn btn-gold" style="width: 100%; justify-content: center; padding: 12px; font-size: 15px; font-weight: 700;">
+            <span id="loginBtnText">🔐 ចូលគ្រប់គ្រង (Sign In)</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Site Footer -->
+  <footer class="site-footer no-print">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px;">
+            <div class="nav-logo-emblem" style="width: 44px; height: 44px;">
+              <img src="/assets/digital-industry-logo-round.png" alt="Digital Industry" class="di-round-logo" />
+            </div>
+            <h4 style="margin: 0; padding: 0; font-family: var(--font-khmer-title); font-size: 15px;">
+              Digital Industry
+            </h4>
+          </div>
+          <p style="color: var(--text-muted); font-size: 13.5px; line-height: 1.7; margin-bottom: 16px;">
+            បង្រៀនវគ្គសិក្សាខ្លីៗអនុវត្តផ្ទាល់ ដោយគ្រូបណ្តុះបណ្តាល <strong>លោក ប៊ន ចន្ថា</strong> ផ្ដោតលើជំនាញបច្ចេកវិទ្យា គេហទំព័រ ក្រាហ្វិក និង AI ស្របតាមទីផ្សារការងារ។
+          </p>
+          <div style="font-size: 13px; color: var(--gold-300);">
+            📍 រាជធានីភ្នំពេញ ព្រះរាជាណាចក្រកម្ពុជា
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4>ទំព័រសំខាន់ៗ</h4>
+          <ul class="footer-links">
+            <li><a href="#home" data-nav="home">ទំព័រដើម & វគ្គសិក្សា</a></li>
+            <li><a href="#register" data-nav="register">ចុះឈ្មោះចូលរៀន</a></li>
+            <li><a href="#verify" data-nav="verify">ផ្ទៀងផ្ទាត់វិញ្ញាបនបត្រ</a></li>
+            <li><a href="#certificate" data-nav="certificate">គំរូវិញ្ញាបនបត្រខ្មែរ</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>ផ្ទាំងគ្រប់គ្រង Admin</h4>
+          <ul class="footer-links">
+            <li><a href="#admin-courses" data-nav="admin-courses">គ្រប់គ្រងវគ្គសិក្សា (Courses)</a></li>
+            <li><a href="#admin-students" data-nav="admin-students">គ្រប់គ្រងបញ្ជីសិស្ស (Students)</a></li>
+            <li><a href="#admin-grading" data-nav="admin-grading">ប្រព័ន្ធដាក់ពិន្ទុ (Grading)</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>ប្រព័ន្ធសុវត្ថិភាព & QR</h4>
+          <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 12px;">
+            រាល់វិញ្ញាបនបត្រទាំងអស់សុទ្ធតែមានលេខសម្គាល់ពិសេស (Certificate Unique ID) និង QR Code អាចស្កេនពិនិត្យតាមរយៈទូរស័ព្ទដៃបានភ្លាមៗ។
+          </p>
+          <span class="badge badge-gold" style="font-size: 12px;">
+            🔒 100% Cryptographic QR Verified
+          </span>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>
+          © ២០២៦ វិទ្យាស្ថានជាតិបណ្តុះបណ្តាលបច្ចេកវិទ្យា & វិជ្ជាជីវៈ (NITVT). រក្សាសិទ្ធិគ្រប់យ៉ាង។
+        </div>
+        <div style="display: flex; gap: 16px;">
+          <span>ស្ដង់ដារជាតិកម្ពុជា</span>
+          <span>•</span>
+          <span>A4 Landscape Certified</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Module Script -->
+  <script type="module" src="/src/js/app.js"></script>
+</body>
+</html>

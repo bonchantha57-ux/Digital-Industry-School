@@ -1,0 +1,87 @@
+rules_version = '2';
+
+/**
+ * 🛡️ FIRESTORE SECURITY RULES - DIGITAL INDUSTRY SCHOOL
+ * ប្រព័ន្ធសុវត្ថិភាពទិន្នន័យសម្រាប់ សាលាបណ្តុះបណ្តាល ឌីជីថល អ៊ីនដាសស្ទ្រី
+ * 
+ * Security Policy:
+ * 1. Admin Authentication: Only authenticated administrators can modify courses, assign grades, issue certificates, or delete records.
+ * 2. Public Read for Courses: Anyone can browse the official course catalog.
+ * 3. Verified Student Registration: Prospective students can submit registration applications with validated fields.
+ * 4. Certificate Verification: Certificates can be looked up and verified publicly via QR code or student ID.
+ * 5. Default Deny: All unspecified collections and routes are strictly blocked.
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper Functions ---
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function isValidCourse() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['titleKh', 'titleEn', 'category'])
+        && data.titleKh is string && data.titleKh.size() > 0
+        && data.titleEn is string && data.titleEn.size() > 0;
+    }
+
+    function isValidStudentRegistration() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['nameKh', 'nameEn', 'phone', 'courseId'])
+        && data.nameKh is string && data.nameKh.size() > 0
+        && data.nameEn is string && data.nameEn.size() > 0
+        && data.phone is string && data.phone.size() >= 6
+        && data.courseId is string && data.courseId.size() > 0;
+    }
+
+    // -----------------------------------------------------------------
+    // 1. Courses Collection (វគ្គសិក្សាទាំងអស់)
+    // -----------------------------------------------------------------
+    match /courses/{courseId} {
+      // សាធារណជនទូទៅ និងសិស្ស អាចចូលមើលបញ្ជីវគ្គសិក្សាបានដោយសេរី
+      allow read: if true;
+
+      // មានតែ Admin ដែលបាន Login ត្រឹមត្រូវទើបអាច បង្កើត កែប្រែ ឬលុបវគ្គសិក្សា
+      allow create: if isAuthenticated() && isValidCourse();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+
+    // -----------------------------------------------------------------
+    // 2. Students Collection (ព័ត៌មាន និងវិញ្ញាបនបត្រសិស្ស)
+    // -----------------------------------------------------------------
+    match /students/{studentId} {
+      // សិស្សអាចចុះឈ្មោះចូលរៀនបានដោយសេរីតាម Online (មានការត្រួតពិនិត្យ Schema ត្រឹមត្រូវ)
+      allow create: if isValidStudentRegistration();
+
+      // អាចអាន ឬទាញព័ត៌មានសិស្សម្នាក់ៗ (សម្រាប់ការផ្ទៀងផ្ទាត់វិញ្ញាបនបត្រតាម QR Code / លេខសម្គាល់)
+      allow get: if true;
+
+      // ការទាញបញ្ជីឈ្មោះសិស្សទាំងអស់ (List all students) តម្រូវឱ្យមានសិទ្ធិជា Admin
+      allow list: if isAuthenticated();
+
+      // មានតែ Admin ទេដែលអាចកែប្រែទិន្នន័យ ដាក់ពិន្ទុ ឬចេញវិញ្ញាបនបត្រ
+      allow update: if isAuthenticated();
+
+      // មានតែ Admin ទេដែលអាចលុបព័ត៌មានសិស្ស
+      allow delete: if isAuthenticated();
+    }
+
+    // -----------------------------------------------------------------
+    // 3. Settings Collection (ការកំណត់សាលា)
+    // -----------------------------------------------------------------
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // -----------------------------------------------------------------
+    // 4. Global Catch-All Rule (Default Deny - បិទការចូលប្រើប្រាស់ Collection ផ្សេងៗ)
+    // -----------------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

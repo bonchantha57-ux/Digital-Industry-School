@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <!-- Circular text paths -->
+    <path id="circlePathTop" d="M 30,100 A 70,70 0 0,1 170,100" fill="none" />
+    <path id="circlePathBottom" d="M 170,100 A 70,70 0 0,1 30,100" fill="none" />
+    <!-- Distressed / Ink Texture Filter -->
+    <filter id="inkRoughness">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+  </defs>
+
+  <g stroke="#C92A2A" fill="#C92A2A" filter="url(#inkRoughness)" opacity="0.88">
+    <!-- Outer Rings -->
+    <circle cx="100" cy="100" r="92" stroke-width="4.5" fill="none" stroke-dasharray="14 4" />
+    <circle cx="100" cy="100" r="84" stroke-width="2" fill="none" />
+    <circle cx="100" cy="100" r="60" stroke-width="2" fill="none" />
+
+    <!-- Top Text along curve -->
+    <text font-family="'Battambang', 'Kantumruy Pro', sans-serif" font-size="9.5" font-weight="bold" letter-spacing="1.2" fill="#C92A2A" stroke="none">
+      <textPath href="#circlePathTop" startOffset="50%" text-anchor="middle">
+        មជ្ឈមណ្ឌលបណ្តុះបណ្តាល DIGITAL INDUSTRY
+      </textPath>
+    </text>
+
+    <!-- Bottom Text along curve -->
+    <text font-family="'Cinzel', 'Inter', sans-serif" font-size="8.5" font-weight="bold" letter-spacing="1.5" fill="#C92A2A" stroke="none">
+      <textPath href="#circlePathBottom" startOffset="50%" text-anchor="middle">
+        * BORN CHANTHA - គ្រូ TRAINING *
+      </textPath>
+    </text>
+
+    <!-- Inner Star & Text -->
+    <g transform="translate(100, 100)">
+      <!-- 5-pointed star -->
+      <polygon points="0,-22 6,-8 21,-8 9,2 14,17 0,8 -14,17 -9,2 -21,-8 -6,-8" fill="#C92A2A" stroke="none" />
+      <!-- Banner with text -->
+      <rect x="-44" y="15" width="88" height="16" rx="3" fill="#C92A2A" />
+      <text x="0" y="27" font-family="'Cinzel', sans-serif" font-size="8" font-weight="900" fill="#FFF" stroke="none" text-anchor="middle" letter-spacing="1.5">
+        APPROVED
+      </text>
+    </g>
+  </g>
+</svg>

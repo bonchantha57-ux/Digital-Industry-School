@@ -1,0 +1,22 @@
+# Node Dependencies
+node_modules/
+package-lock.json
+
+# Build Outputs
+dist/
+dist-ssr/
+*.local
+
+# Environment & Sensitive Keys
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+serviceAccountKey.json
+
+# Editor & OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
