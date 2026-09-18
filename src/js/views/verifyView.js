@@ -5,7 +5,7 @@ import { downloadCertificateAsImage, printCertificate } from '../utils/exportHel
 
 /**
  * Public Verification Portal View
- * Enables live mobile phone QR scanning & instant Firestore cloud certificate verification
+ * Dedicated 1-page mobile-optimized view for live QR code scans
  */
 export function renderVerifyView(params = {}) {
   let queryCertNo = params.certNo || '';
@@ -25,22 +25,89 @@ export function renderVerifyView(params = {}) {
     }
   }
 
+  const isDirectScanMode = Boolean(queryStudentId || queryCertNo);
+
   // Attempt to find student in local cache first
   let matchedStudent = null;
   const allStudents = store.getStudents();
 
   if (queryStudentId) {
-    matchedStudent = allStudents.find(s => s.id === queryStudentId);
-  } else if (queryCertNo) {
-    matchedStudent = allStudents.find(s => s.certificate?.certificateNo === queryCertNo);
+    matchedStudent = allStudents.find(s => s.id.toLowerCase() === queryStudentId.toLowerCase());
+  }
+  if (!matchedStudent && queryCertNo) {
+    matchedStudent = allStudents.find(s => s.certificate?.certificateNo.toLowerCase() === queryCertNo.toLowerCase());
   }
 
   const course = matchedStudent ? store.getCourseById(matchedStudent.courseId) : null;
   const settings = store.getSettings();
 
   // If search query is provided via URL (e.g. from QR scan) but not yet in local cache:
-  const isPendingCloudFetch = (queryStudentId || queryCertNo) && !matchedStudent;
+  const isPendingCloudFetch = isDirectScanMode && !matchedStudent;
 
+  // -------------------------------------------------------------
+  // MODE A: DEDICATED 1-PAGE SCAN RESULT VIEW (When scanned via QR)
+  // -------------------------------------------------------------
+  if (isDirectScanMode) {
+    return `
+      <div class="verify-standalone-container">
+        <!-- Dedicated Official Verification Top Bar -->
+        <div class="verify-standalone-header">
+          <div class="verify-brand-badge">
+            <div class="verify-logo-ring">
+              <img src="/assets/digital-industry-logo-round.png" alt="Digital Industry" />
+            </div>
+            <div>
+              <h1 class="verify-school-title">មជ្ឈមណ្ឌលបណ្តុះបណ្តាល Digital Industry</h1>
+              <div class="verify-portal-subtitle">DIGITAL INDUSTRY TRAINING CENTER • គ្រូ ប៊ន ចន្ថា</div>
+            </div>
+          </div>
+          <div class="verify-status-tag">
+            <span class="verify-tag-dot"></span> ផ្ទៀងផ្ទាត់ផ្លូវការពី Cloud Database
+          </div>
+        </div>
+
+        <!-- Verification Result Container -->
+        <div id="verifyResultContainer">
+          ${isPendingCloudFetch ? `
+            <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98)); border: 2px solid var(--gold-400); border-radius: var(--radius-xl); padding: 50px 24px; text-align: center; box-shadow: 0 12px 35px rgba(217, 119, 6, 0.25);">
+              <div style="font-size: 52px; margin-bottom: 16px; animation: bounce 1.5s infinite;">🔄</div>
+              <h2 style="color: var(--gold-300); font-size: 22px; margin-bottom: 8px; font-family: var(--font-khmer);">
+                កំពុងផ្ទៀងផ្ទាត់វិញ្ញាបនបត្រពី Cloud Firestore...
+              </h2>
+              <p style="color: var(--text-muted); font-size: 15px;">
+                កំពុងទាញទិន្នន័យសម្រាប់លេខកូដ៖ <strong style="color: #fff; font-family: var(--font-latin); font-size: 17px;">${queryCertNo || queryStudentId}</strong>
+              </p>
+              <div style="margin-top: 18px; display: inline-block; width: 140px; height: 3px; background: linear-gradient(90deg, transparent, var(--gold-400), transparent); border-radius: 2px;"></div>
+            </div>
+          ` : matchedStudent && matchedStudent.grades && matchedStudent.grades.passed ? renderVerifiedStudentMarkup(matchedStudent, course, settings) : `
+            <div style="background: rgba(239, 68, 68, 0.12); border: 1.5px solid rgba(239, 68, 68, 0.4); border-radius: var(--radius-lg); padding: 44px 20px; text-align: center;">
+              <div style="font-size: 46px; margin-bottom: 12px;">❌</div>
+              <h3 style="color: #f87171; font-size: 20px; margin-bottom: 8px;">
+                ពុំមានទិន្នន័យវិញ្ញាបនបត្រដែលត្រូវនឹងលេខកូដនេះក្នុងប្រព័ន្ធទេ!
+              </h3>
+              <p style="color: var(--text-dim); font-size: 14px; max-width: 480px; margin: 0 auto 20px;">
+                សូមពិនិត្យមើលលេខកូដវិញ្ញាបនបត្រ ឬលេខសម្គាល់សិស្សម្តងទៀត ឬទាក់ទងមកកាន់គ្រូបណ្តុះបណ្តាលដើម្បីផ្ទៀងផ្ទាត់បន្ថែម។
+              </p>
+              <button id="verifySearchManualBtn" class="btn btn-outline-gold btn-sm">
+                🔍 ស្វែងរកលេខកូដផ្សេង
+              </button>
+            </div>
+          `}
+        </div>
+
+        <!-- Back to Academy Website Link -->
+        <div style="text-align: center; margin-top: 32px;" class="no-print">
+          <button id="verifyGoHomeBtn" class="btn btn-outline" style="font-size: 13.5px; padding: 10px 24px; border-radius: var(--radius-lg);">
+            <span>🌐 ចូលទៅកាន់គេហទំព័រដើម Digital Industry</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // -------------------------------------------------------------
+  // MODE B: GENERAL VERIFICATION PORTAL (Manual Search Input Mode)
+  // -------------------------------------------------------------
   return `
     <div class="container" style="padding: 40px 20px 80px; max-width: 960px;">
       <div style="text-align: center; margin-bottom: 32px;">
@@ -77,27 +144,15 @@ export function renderVerifyView(params = {}) {
 
       <!-- Verification Result Container -->
       <div id="verifyResultContainer">
-        ${isPendingCloudFetch ? `
-          <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.98)); border: 2px solid var(--gold-400); border-radius: var(--radius-xl); padding: 50px 24px; text-align: center; box-shadow: 0 10px 30px rgba(217, 119, 6, 0.2);">
-            <div style="font-size: 46px; margin-bottom: 16px; animation: bounce 1.5s infinite;">🔄</div>
-            <h2 style="color: var(--gold-300); font-size: 22px; margin-bottom: 8px;">
-              កំពុងផ្ទៀងផ្ទាត់វិញ្ញាបនបត្រពី Cloud Firestore...
-            </h2>
-            <p style="color: var(--text-muted); font-size: 14.5px;">
-              កំពុងទាញទិន្នន័យសម្រាប់លេខកូដ៖ <strong style="color: #fff; font-family: var(--font-latin);">${queryCertNo || queryStudentId}</strong>
-            </p>
-          </div>
-        ` : matchedStudent && matchedStudent.grades && matchedStudent.grades.passed ? renderVerifiedStudentMarkup(matchedStudent, course, settings) : `
-          <div style="background: var(--bg-card); border: 1px dashed var(--border-subtle); border-radius: var(--radius-lg); padding: 48px 24px; text-align: center;">
-            <div style="font-size: 46px; margin-bottom: 12px;">🔎</div>
-            <h3 style="color: #fff; font-size: 19px; margin-bottom: 8px;">
-              សូមវាយបញ្ចូលលេខកូដវិញ្ញាបនបត្រ ឬលេខសម្គាល់សិស្ស
-            </h3>
-            <p style="color: var(--text-dim); font-size: 14px; max-width: 480px; margin: 0 auto;">
-              ឧទាហរណ៍៖ <strong>CERT-DI-2026-9279</strong> ឬ អត្តលេខ <strong>DI-2026-001</strong>
-            </p>
-          </div>
-        `}
+        <div style="background: var(--bg-card); border: 1px dashed var(--border-subtle); border-radius: var(--radius-lg); padding: 48px 24px; text-align: center;">
+          <div style="font-size: 46px; margin-bottom: 12px;">🔎</div>
+          <h3 style="color: #fff; font-size: 19px; margin-bottom: 8px;">
+            សូមវាយបញ្ចូលលេខកូដវិញ្ញាបនបត្រ ឬលេខសម្គាល់សិស្ស
+          </h3>
+          <p style="color: var(--text-dim); font-size: 14px; max-width: 480px; margin: 0 auto;">
+            ឧទាហរណ៍៖ <strong>CERT-DI-2026-9279</strong> ឬ អត្តលេខ <strong>DI-2026-001</strong>
+          </p>
+        </div>
       </div>
     </div>
   `;
@@ -114,48 +169,52 @@ function renderVerifiedStudentMarkup(student, course, settings) {
   const certNo = student.certificate?.certificateNo || `CERT-${student.id}`;
 
   return `
-    <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(17, 24, 39, 0.98)); border: 2px solid rgba(16, 185, 129, 0.5); border-radius: var(--radius-xl); padding: 32px 24px; box-shadow: 0 15px 35px rgba(16, 185, 129, 0.18);">
+    <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(17, 24, 39, 0.99)); border: 2px solid rgba(16, 185, 129, 0.55); border-radius: var(--radius-xl); padding: 24px 18px; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5), 0 0 25px rgba(16, 185, 129, 0.15);">
       
       <!-- Verified Top Status Banner -->
-      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 20px; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 18px; margin-bottom: 22px; flex-wrap: wrap; gap: 14px;">
         <div style="display: flex; align-items: center; gap: 14px;">
-          <div style="width: 56px; height: 56px; border-radius: 50%; overflow: hidden; border: 2.5px solid #10b981; box-shadow: 0 0 18px rgba(16, 185, 129, 0.4); flex-shrink: 0; background: #070d19;">
+          <div style="width: 52px; height: 52px; border-radius: 50%; overflow: hidden; border: 2.5px solid #10b981; box-shadow: 0 0 18px rgba(16, 185, 129, 0.45); flex-shrink: 0; background: #070d19;">
             <img src="/assets/digital-industry-logo-round.png" style="width: 100%; height: 100%; object-fit: cover;" alt="Digital Industry" />
           </div>
           <div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 18px;">✅</span>
-              <span style="color: #34d399; font-weight: 700; font-size: 17px;">វិញ្ញាបនបត្រមានសុពលភាពផ្លូវការ ១០០%</span>
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span style="color: #34d399; font-weight: 700; font-size: 17px;">
+                ✅ វិញ្ញាបនបត្រមានសុពលភាពផ្លូវការ (100% Verified)
+              </span>
             </div>
-            <div style="color: var(--text-dim); font-size: 13px; font-family: var(--font-latin); margin-top: 2px;">
-              OFFICIALLY VERIFIED • DIGITAL INDUSTRY TRAINING CENTER
+            <div style="color: var(--text-dim); font-size: 12px; font-family: var(--font-latin); margin-top: 2px; letter-spacing: 0.3px;">
+              OFFICIALLY ACCREDITED • DIGITAL INDUSTRY TRAINING CENTER
             </div>
           </div>
         </div>
 
-        <div class="no-print" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <button class="btn btn-outline-gold btn-sm" id="verifyDownloadBtn">
-            <span>📥 ទាញយកវិញ្ញាបនបត្រ (PNG)</span>
+        <div class="no-print" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-outline-gold btn-sm" id="verifyZoomBtn" title="ពង្រីកមើលទំហំធំ">
+            <span>🔍 ពង្រីកមើល</span>
           </button>
-          <button class="btn btn-gold btn-sm" id="verifyPrintBtn">
+          <button class="btn btn-gold btn-sm" id="verifyDownloadBtn" title="ទាញយករូបភាពវិញ្ញាបនបត្រ">
+            <span>📥 ទាញយក (PNG)</span>
+          </button>
+          <button class="btn btn-gold btn-sm" id="verifyPrintBtn" title="បោះពុម្ពវិញ្ញាបនបត្រ">
             <span>🖨️ បោះពុម្ព</span>
           </button>
         </div>
       </div>
 
       <!-- Student Profile Card -->
-      <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 24px; background: rgba(255, 255, 255, 0.03); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 18px; margin-bottom: 20px; background: rgba(255, 255, 255, 0.035); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); flex-wrap: wrap;">
         <img src="${student.photoUrl || '/assets/digital-industry-logo-round.png'}" 
-             style="width: 75px; height: 75px; border-radius: 50%; object-fit: cover; border: 2.5px solid var(--gold-400); box-shadow: 0 4px 12px rgba(0,0,0,0.3);" 
+             style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2.5px solid var(--gold-400); box-shadow: 0 4px 14px rgba(0,0,0,0.4);" 
              alt="Student Photo" />
         <div style="flex-grow: 1;">
-          <h2 style="font-size: 24px; color: #fff; margin-bottom: 3px; font-family: var(--font-khmer); font-weight: 700;">
+          <h2 style="font-size: 22px; color: #fff; margin-bottom: 3px; font-family: var(--font-khmer); font-weight: 700;">
             ${student.nameKh}
           </h2>
-          <div style="font-family: var(--font-latin); font-size: 16px; color: var(--gold-300); font-weight: 700;">
+          <div style="font-family: var(--font-latin); font-size: 15px; color: var(--gold-300); font-weight: 700; letter-spacing: 0.3px;">
             ${student.nameEn}
           </div>
-          <div style="font-size: 13.5px; color: var(--text-muted); margin-top: 5px;">
+          <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
             អត្តលេខសិស្ស៖ <strong style="font-family: var(--font-latin); color: #fff;">${student.id}</strong> | 
             ភេទ៖ <strong style="color: #fff;">${student.gender}</strong>
           </div>
@@ -163,50 +222,53 @@ function renderVerifiedStudentMarkup(student, course, settings) {
       </div>
 
       <!-- Detailed Verification Specs Grid -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 28px;">
-        <div style="background: rgba(15, 23, 42, 0.7); padding: 14px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
-          <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 2px;">មុខវិជ្ជា/វគ្គសិក្សា (Course)</div>
-          <div style="font-weight: 700; color: #fff; font-size: 15px;">${course ? course.titleKh : 'វគ្គសិក្សាជំនាញខ្លី'}</div>
-          <div style="font-size: 12px; color: var(--gold-300); font-family: var(--font-latin);">${course ? course.titleEn : 'Professional Course'}</div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 24px;">
+        <div style="background: rgba(15, 23, 42, 0.75); padding: 13px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+          <div style="font-size: 11.5px; color: var(--text-dim); margin-bottom: 2px;">មុខវិជ្ជា/វគ្គសិក្សា (Course)</div>
+          <div style="font-weight: 700; color: #fff; font-size: 14.5px;">${course ? course.titleKh : 'វគ្គសិក្សាជំនាញខ្លី'}</div>
+          <div style="font-size: 11.5px; color: var(--gold-300); font-family: var(--font-latin);">${course ? course.titleEn : 'Professional Course'}</div>
         </div>
 
-        <div style="background: rgba(15, 23, 42, 0.7); padding: 14px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
-          <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 2px;">និទ្ទេស & លទ្ធផលប្រឡង (Result)</div>
-          <div style="font-weight: 700; color: #34d399; font-size: 16px;">${student.grades.gradeKh}</div>
-          <div style="font-size: 12px; color: var(--text-muted);">ពិន្ទុសរុប៖ <strong>${toKhmerNum(student.grades.totalScore)} / ១០០</strong> (ជាប់)</div>
+        <div style="background: rgba(15, 23, 42, 0.75); padding: 13px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+          <div style="font-size: 11.5px; color: var(--text-dim); margin-bottom: 2px;">និទ្ទេស & លទ្ធផលប្រឡង (Result)</div>
+          <div style="font-weight: 700; color: #34d399; font-size: 15.5px;">${student.grades.gradeKh}</div>
+          <div style="font-size: 11.5px; color: var(--text-muted);">ពិន្ទុសរុប៖ <strong>${toKhmerNum(student.grades.totalScore)} / ១០០</strong> (ជាប់)</div>
         </div>
 
-        <div style="background: rgba(15, 23, 42, 0.7); padding: 14px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
-          <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 2px;">លេខវិញ្ញាបនបត្រ (Ref No.)</div>
-          <div style="font-weight: 700; color: var(--gold-300); font-family: var(--font-latin); font-size: 15px;">
+        <div style="background: rgba(15, 23, 42, 0.75); padding: 13px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+          <div style="font-size: 11.5px; color: var(--text-dim); margin-bottom: 2px;">លេខវិញ្ញាបនបត្រ (Ref No.)</div>
+          <div style="font-weight: 700; color: var(--gold-300); font-family: var(--font-latin); font-size: 14.5px;">
             ${certNo}
           </div>
         </div>
 
-        <div style="background: rgba(15, 23, 42, 0.7); padding: 14px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
-          <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 2px;">ទីកន្លែង & កាលបរិច្ឆេទចេញ</div>
-          <div style="font-weight: 600; color: #fff; font-size: 14px;">
+        <div style="background: rgba(15, 23, 42, 0.75); padding: 13px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+          <div style="font-size: 11.5px; color: var(--text-dim); margin-bottom: 2px;">ទីកន្លែង & កាលបរិច្ឆេទចេញ</div>
+          <div style="font-weight: 600; color: #fff; font-size: 13.5px;">
             ${certDateKh}
           </div>
         </div>
       </div>
 
-      <!-- EMBEDDED ORIGINAL LUXURY CERTIFICATE PREVIEW -->
-      <div style="margin-top: 32px; border-top: 1px solid var(--border-subtle); padding-top: 24px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+      <!-- EMBEDDED ORIGINAL LUXURY CERTIFICATE PREVIEW (RESPONSIVE SCALED FOR PHONES) -->
+      <div style="margin-top: 24px; border-top: 1px solid var(--border-subtle); padding-top: 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
           <div>
-            <h3 style="color: var(--gold-300); font-size: 18px; margin-bottom: 2px;">
+            <h3 style="color: var(--gold-300); font-size: 17px; margin-bottom: 2px; font-family: var(--font-khmer);">
               📜 ផ្ទាំងវិញ្ញាបនបត្រផ្លូវការ (Official Certificate View)
             </h3>
-            <p style="color: var(--text-dim); font-size: 13px;">
-              ផ្ទាំងវិញ្ញាបនបត្របញ្ជាក់ការសិក្សាស្ដង់ដារដែលបានចេញដោយប្រព័ន្ធ
+            <p style="color: var(--text-dim); font-size: 12.5px;">
+              បង្រួមបង្ហាញសមស្របតាមទំហំអេក្រង់ទូរស័ព្ទដៃ (អាចចុច "ពង្រីកមើល" បាន)
             </p>
           </div>
+          <button class="btn btn-outline-gold btn-sm no-print" id="verifyZoomBtn2" style="font-size: 12px; padding: 4px 12px;">
+            🔍 ពង្រីកមើលទំហំធំ
+          </button>
         </div>
 
-        <!-- Scrollable Certificate Canvas Container (Mobile Friendly) -->
-        <div style="width: 100%; overflow-x: auto; padding-bottom: 15px; -webkit-overflow-scrolling: touch;">
-          <div style="min-width: 900px; margin: 0 auto;">
+        <!-- RESPONSIVE AUTO-SCALER CONTAINER -->
+        <div class="cert-scaler-outer" id="certScalerOuter">
+          <div class="cert-scaler-inner" id="certScalerInner">
             <div class="khmer-certificate theme-${certTheme}" id="verifiedKhmerCertificate" style="box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
               <div class="cert-frame-outer"></div>
               <div class="cert-frame-inner"></div>
@@ -292,10 +354,22 @@ function renderVerifiedStudentMarkup(student, course, settings) {
         </div>
       </div>
 
-      <!-- Issuer & Institution Footer -->
-      <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 20px; border-top: 1px solid var(--border-subtle); font-size: 13.5px; color: var(--text-muted); flex-wrap: wrap; gap: 12px; margin-top: 20px;">
+      <!-- Security Notice & Issuer Footer -->
+      <div style="margin-top: 20px; padding: 14px 18px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-sm); font-size: 12.5px; color: #cbd5e1; text-align: center;">
+        🛡️ វិញ្ញាបនបត្រឌីជីថលនេះត្រូវបានចុះបញ្ជី និងផ្ទៀងផ្ទាត់ផ្លូវការផ្ទាល់ពី Cloud Database នៃមជ្ឈមណ្ឌល <strong>Digital Industry Training Center</strong>។
+      </div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 16px; border-top: 1px solid var(--border-subtle); font-size: 12.5px; color: var(--text-dim); flex-wrap: wrap; gap: 10px; margin-top: 16px;">
         <div>ស្ថាប័នបណ្តុះបណ្តាល៖ <strong>${settings.instituteNameKh || 'មជ្ឈមណ្ឌលបណ្តុះបណ្តាល Digital Industry'}</strong></div>
         <div>គ្រូ Training ទទួលបន្ទុក៖ <strong>${settings.directorName || 'លោក ប៊ន ចន្ថា'}</strong></div>
+      </div>
+    </div>
+
+    <!-- FULLSCREEN ZOOM LIGHTBOX MODAL -->
+    <div class="cert-zoom-modal no-print" id="certZoomModal">
+      <button class="cert-zoom-close-btn" id="closeZoomModalBtn" title="បិទ">✕</button>
+      <div class="cert-zoom-modal-content">
+        <div id="zoomModalCertContainer"></div>
       </div>
     </div>
   `;
@@ -326,6 +400,42 @@ export function initVerifyEvents(onNavigate, showToast, params = {}) {
     }
   }
 
+  // -------------------------------------------------------------
+  // RESPONSIVE AUTO-SCALER FUNCTION (Fit Certificate to Mobile Viewport)
+  // -------------------------------------------------------------
+  function fitCertificateToScreen() {
+    const outer = document.getElementById('certScalerOuter');
+    const inner = document.getElementById('certScalerInner');
+    const cert = document.getElementById('verifiedKhmerCertificate');
+    if (!outer || !inner || !cert) return;
+
+    const availableWidth = outer.clientWidth - 20; // account for padding
+    const baseWidth = 1060;
+    const baseHeight = 750;
+
+    if (availableWidth < baseWidth && availableWidth > 0) {
+      const scale = Math.min(1, Math.max(0.24, availableWidth / baseWidth));
+      inner.style.width = `${Math.round(baseWidth * scale)}px`;
+      inner.style.height = `${Math.round(baseHeight * scale)}px`;
+      cert.style.transform = `scale(${scale})`;
+      cert.style.transformOrigin = 'top left';
+    } else {
+      inner.style.width = `${baseWidth}px`;
+      inner.style.height = `${baseHeight}px`;
+      cert.style.transform = 'none';
+    }
+  }
+
+  // Setup listeners for screen resize and orientation change
+  window.addEventListener('resize', fitCertificateToScreen);
+  window.addEventListener('orientationchange', () => setTimeout(fitCertificateToScreen, 250));
+
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(() => fitCertificateToScreen());
+    const outer = document.getElementById('certScalerOuter');
+    if (outer) ro.observe(outer);
+  }
+
   // Generate QR for the embedded certificate
   async function renderVerifyQR(student) {
     const qrImg = document.getElementById('verifiedLiveQrImg');
@@ -339,10 +449,42 @@ export function initVerifyEvents(onNavigate, showToast, params = {}) {
     qrImg.src = dataUrl;
   }
 
+  // Setup Fullscreen Zoom Modal
+  function setupZoomModal() {
+    const modal = document.getElementById('certZoomModal');
+    const container = document.getElementById('zoomModalCertContainer');
+    const closeBtn = document.getElementById('closeZoomModalBtn');
+    const certOriginal = document.getElementById('verifiedKhmerCertificate');
+
+    function openModal() {
+      if (!modal || !certOriginal || !container) return;
+      container.innerHTML = '';
+      const clone = certOriginal.cloneNode(true);
+      clone.id = 'verifiedKhmerCertificateCloned';
+      clone.style.transform = 'none';
+      clone.style.margin = '0 auto';
+      container.appendChild(clone);
+      modal.classList.add('active');
+    }
+
+    function closeModal() {
+      if (!modal) return;
+      modal.classList.remove('active');
+    }
+
+    document.getElementById('verifyZoomBtn')?.addEventListener('click', openModal);
+    document.getElementById('verifyZoomBtn2')?.addEventListener('click', openModal);
+    closeBtn?.addEventListener('click', closeModal);
+
+    modal?.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+  }
+
   // Bind download and print buttons on verified certificate
   function bindVerifiedActionButtons(student) {
     document.getElementById('verifyDownloadBtn')?.addEventListener('click', async () => {
-      showToast('កំពុងទាញយករូបភាពវិញ្ញាបនបត្រ...', 'info');
+      showToast('កំពុងទាញយករូបភាពវិញ្ញាបនបត្រ HD...', 'info');
       const filename = `Certificate_${student.nameEn || student.id}.png`;
       const success = await downloadCertificateAsImage('verifiedKhmerCertificate', filename);
       if (success) {
@@ -353,7 +495,20 @@ export function initVerifyEvents(onNavigate, showToast, params = {}) {
     document.getElementById('verifyPrintBtn')?.addEventListener('click', () => {
       printCertificate();
     });
+
+    setupZoomModal();
   }
+
+  // Bind Home and Manual Search buttons
+  document.getElementById('verifyGoHomeBtn')?.addEventListener('click', () => {
+    document.body.classList.remove('verify-standalone-mode');
+    onNavigate('home');
+  });
+
+  document.getElementById('verifySearchManualBtn')?.addEventListener('click', () => {
+    document.body.classList.remove('verify-standalone-mode');
+    onNavigate('verify');
+  });
 
   // Async Verification Loader from Cloud Firestore
   async function performVerification(studentId, certNo) {
@@ -372,13 +527,13 @@ export function initVerifyEvents(onNavigate, showToast, params = {}) {
     if (!student) {
       if (resultContainer) {
         resultContainer.innerHTML = `
-          <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.98)); border: 2px solid var(--gold-400); border-radius: var(--radius-xl); padding: 48px 24px; text-align: center; box-shadow: 0 10px 30px rgba(217, 119, 6, 0.2);">
-            <div style="font-size: 46px; margin-bottom: 16px; animation: bounce 1.5s infinite;">🔄</div>
-            <h2 style="color: var(--gold-300); font-size: 22px; margin-bottom: 8px;">
+          <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98)); border: 2px solid var(--gold-400); border-radius: var(--radius-xl); padding: 50px 24px; text-align: center; box-shadow: 0 12px 35px rgba(217, 119, 6, 0.25);">
+            <div style="font-size: 52px; margin-bottom: 16px; animation: bounce 1.5s infinite;">🔄</div>
+            <h2 style="color: var(--gold-300); font-size: 22px; margin-bottom: 8px; font-family: var(--font-khmer);">
               កំពុងផ្ទៀងផ្ទាត់វិញ្ញាបនបត្រពី Cloud Firestore...
             </h2>
-            <p style="color: var(--text-muted); font-size: 14.5px;">
-              កំពុងទាញទិន្នន័យសម្រាប់លេខកូដ៖ <strong style="color: #fff; font-family: var(--font-latin);">${certNo || studentId}</strong>
+            <p style="color: var(--text-muted); font-size: 15px;">
+              កំពុងទាញទិន្នន័យសម្រាប់លេខកូដ៖ <strong style="color: #fff; font-family: var(--font-latin); font-size: 17px;">${certNo || studentId}</strong>
             </p>
           </div>
         `;
@@ -401,13 +556,16 @@ export function initVerifyEvents(onNavigate, showToast, params = {}) {
           resultContainer.innerHTML = renderVerifiedStudentMarkup(student, course, settings);
           renderVerifyQR(student);
           bindVerifiedActionButtons(student);
+          fitCertificateToScreen();
+          setTimeout(fitCertificateToScreen, 150);
+          setTimeout(fitCertificateToScreen, 600);
         }
         showToast(`ផ្ទៀងផ្ទាត់ជោគជ័យ! សិស្ស៖ ${student.nameKh}`, 'success');
       } else {
         if (resultContainer) {
           resultContainer.innerHTML = `
-            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: var(--radius-lg); padding: 40px; text-align: center;">
-              <div style="font-size: 40px; margin-bottom: 12px;">⚠️</div>
+            <div style="background: rgba(239, 68, 68, 0.12); border: 1.5px solid rgba(239, 68, 68, 0.4); border-radius: var(--radius-lg); padding: 40px; text-align: center;">
+              <div style="font-size: 44px; margin-bottom: 12px;">⚠️</div>
               <h3 style="color: #f87171; font-size: 20px; margin-bottom: 6px;">
                 រកឃើញសិស្ស (${student.nameKh}) ប៉ុន្តែពុំទាន់មានវិញ្ញាបនបត្រ ឬមិនទាន់បញ្ចប់ការសិក្សា!
               </h3>
@@ -419,16 +577,23 @@ export function initVerifyEvents(onNavigate, showToast, params = {}) {
     } else {
       if (resultContainer) {
         resultContainer.innerHTML = `
-          <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: var(--radius-lg); padding: 40px; text-align: center;">
-            <div style="font-size: 44px; margin-bottom: 12px;">❌</div>
+          <div style="background: rgba(239, 68, 68, 0.12); border: 1.5px solid rgba(239, 68, 68, 0.4); border-radius: var(--radius-lg); padding: 40px; text-align: center;">
+            <div style="font-size: 46px; margin-bottom: 12px;">❌</div>
             <h3 style="color: #f87171; font-size: 20px; margin-bottom: 8px;">
               ពុំមានទិន្នន័យវិញ្ញាបនបត្រដែលត្រូវនឹងលេខកូដនេះក្នុងប្រព័ន្ធទេ!
             </h3>
-            <p style="color: var(--text-dim); font-size: 14px; max-width: 480px; margin: 0 auto;">
+            <p style="color: var(--text-dim); font-size: 14px; max-width: 480px; margin: 0 auto 20px;">
               សូមពិនិត្យមើលលេខកូដវិញ្ញាបនបត្រ ឬលេខសម្គាល់សិស្សម្តងទៀត ឬទាក់ទងមកកាន់គ្រូបណ្តុះបណ្តាលដើម្បីផ្ទៀងផ្ទាត់បន្ថែម។
             </p>
+            <button id="verifySearchManualBtn2" class="btn btn-outline-gold btn-sm">
+              🔍 ស្វែងរកលេខកូដផ្សេង
+            </button>
           </div>
         `;
+        document.getElementById('verifySearchManualBtn2')?.addEventListener('click', () => {
+          document.body.classList.remove('verify-standalone-mode');
+          onNavigate('verify');
+        });
       }
       showToast('ពុំមានទិន្នន័យវិញ្ញាបនបត្រដែលត្រូវនឹងលេខកូដនេះក្នុងប្រព័ន្ធទេ!', 'error');
     }
@@ -440,6 +605,9 @@ export function initVerifyEvents(onNavigate, showToast, params = {}) {
     if (existing && existing.grades && existing.grades.passed) {
       renderVerifyQR(existing);
       bindVerifiedActionButtons(existing);
+      fitCertificateToScreen();
+      setTimeout(fitCertificateToScreen, 150);
+      setTimeout(fitCertificateToScreen, 600);
     } else {
       performVerification(queryStudentId, queryCertNo);
     }

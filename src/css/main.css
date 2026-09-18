@@ -618,3 +618,185 @@ a:hover {
     text-align: center;
   }
 }
+
+/* ==========================================================================
+   Dedicated Standalone QR Verification Page (Mobile Optimized 1-Page View)
+   ========================================================================== */
+body.verify-standalone-mode .navbar {
+  display: none !important;
+}
+
+body.verify-standalone-mode footer.footer {
+  display: none !important;
+}
+
+body.verify-standalone-mode main#appMainContent {
+  padding: 0 !important;
+  min-height: 100vh;
+}
+
+.verify-standalone-container {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+}
+
+.verify-standalone-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 22px;
+  box-shadow: var(--shadow-sm);
+}
+
+.verify-brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.verify-logo-ring {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--gold-400);
+  box-shadow: 0 0 14px rgba(217, 119, 6, 0.35);
+  flex-shrink: 0;
+  background: #070d19;
+}
+
+.verify-logo-ring img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.verify-school-title {
+  font-family: var(--font-khmer-title);
+  font-size: 16px;
+  color: #fff;
+  line-height: 1.3;
+  margin-bottom: 2px;
+}
+
+.verify-portal-subtitle {
+  font-size: 12px;
+  color: var(--gold-300);
+  font-family: var(--font-latin);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.verify-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 50px;
+}
+
+.verify-tag-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulse 2s infinite;
+}
+
+/* Responsive Certificate Scaler for Mobile Screens */
+.cert-scaler-outer {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  margin: 14px 0 20px;
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(217, 119, 6, 0.25);
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.cert-scaler-inner {
+  position: relative;
+  transform-origin: top left;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
+  transition: width 0.15s ease, height 0.15s ease;
+}
+
+.cert-scaler-inner .khmer-certificate {
+  margin: 0 !important;
+  left: 0 !important;
+  top: 0 !important;
+}
+
+/* Fullscreen Zoom Modal */
+.cert-zoom-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(5, 8, 15, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.cert-zoom-modal.active {
+  display: flex;
+}
+
+.cert-zoom-modal-content {
+  max-width: 100%;
+  max-height: 88vh;
+  overflow: auto;
+  border-radius: 8px;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.9);
+  -webkit-overflow-scrolling: touch;
+  padding: 10px;
+}
+
+.cert-zoom-close-btn {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  background: rgba(239, 68, 68, 0.85);
+  color: #fff;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  transition: var(--transition);
+}
+
+.cert-zoom-close-btn:hover {
+  transform: scale(1.1);
+  background: #dc2626;
+}
+

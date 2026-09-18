@@ -243,6 +243,18 @@ class AppRouter {
     this.currentView = viewName;
     this.currentParams = params;
 
+    // Check if in standalone verification mode (e.g. from QR scan)
+    const isStandaloneVerify = viewName === 'verify' && Boolean(
+      params.studentId || 
+      params.certNo || 
+      (typeof window !== 'undefined' && (window.location.hash.includes('studentId') || window.location.hash.includes('certNo')))
+    );
+    if (isStandaloneVerify) {
+      document.body.classList.add('verify-standalone-mode');
+    } else {
+      document.body.classList.remove('verify-standalone-mode');
+    }
+
     // Update active nav button
     document.querySelectorAll('[data-nav]').forEach(el => {
       const navTarget = el.getAttribute('data-nav');
